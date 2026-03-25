@@ -1,0 +1,183 @@
+---
+title: "Informe Gerencial Financiero 2025"
+author: "Cooperativa de Ahorro y Crédito 18 de Noviembre"
+date: "`r Sys.Date()`"
+output: pdf_document
+fontsize: 11pt
+geometry: margin=1in
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  fig.align = "center"
+)
+
+project_root <- normalizePath("..", winslash = "/", mustWork = TRUE)
+
+source(
+  file.path(project_root, "R", "gerencia.R"),
+  local = knitr::knit_global()
+)
+```
+
+# Resumen Ejecutivo
+
+El presente informe expone los principales resultados financieros de la cooperativa durante el ejercicio 2025, considerando crecimiento del negocio, estructura financiera, calidad de cartera, rentabilidad y eficiencia operativa.
+
+```{r, results='asis'}
+cat(texto_resumen_ejecutivo)
+```
+
+---
+
+# Crecimiento del negocio
+
+La evolución de la cartera bruta y de los activos productivos refleja el comportamiento general de la expansión crediticia de la institución durante el periodo analizado.
+
+```{r}
+grafico_crecimiento
+```
+
+---
+
+# Estructura financiera
+
+La comparación entre activos productivos y pasivos con costo permite evaluar la capacidad de intermediación financiera y el uso eficiente de los recursos captados.
+
+```{r}
+grafico_estructura
+```
+
+---
+
+# Productividad del balance
+
+`r texto_productividad`
+
+```{r}
+grafico_productividad
+```
+
+---
+
+# Calidad de cartera: morosidad ampliada
+
+`r texto_morosidad`
+
+```{r}
+grafico_morosidad
+```
+
+---
+
+# Calidad de cartera: cartera improductiva
+
+#El siguiente gráfico presenta la evolución comparativa entre la cartera improductiva y la cartera bruta, como referencia del deterioro del #portafolio crediticio.
+
+#```{r}
+#grafico_improductiva
+#```
+
+---
+
+# Ratio de cartera improductiva
+
+`r texto_ratio_cartera`
+
+```{r}
+grafico_ratio_cartera
+```
+
+---
+
+# Margen financiero neto
+
+La evolución del margen financiero neto permite observar la capacidad de la cooperativa para generar ingresos financieros a partir de sus operaciones de intermediación.
+
+```{r}
+grafico_margen
+```
+
+---
+
+# Grado de absorción del margen
+
+`r texto_absorcion`
+
+```{r}
+grafico_absorcion
+```
+
+---
+
+# Eficiencia operativa
+
+`r texto_eficiencia`
+
+```{r}
+grafico_eficiencia
+```
+
+---
+
+# Relación entre crecimiento y riesgo
+
+El siguiente gráfico permite observar si la expansión de la cartera ha venido acompañada de aumentos en el nivel de morosidad.
+
+```{r}
+grafico_riesgo_crecimiento
+```
+
+# Mapa mensual de riesgo y eficiencia
+
+El heatmap resume visualmente la evolución de los principales indicadores críticos de riesgo y eficiencia durante el periodo.
+
+```{r}
+grafico_heatmap
+```
+
+# Resultado del ejercicio
+
+El siguiente gráfico presenta la evolución mensual de los ingresos, gastos y excedente acumulado, permitiendo evaluar la capacidad de generación de resultados de la cooperativa durante el periodo.
+
+```{r}
+grafico_resultado
+```
+
+
+## Sección para activos y pasivos
+
+# Estructura patrimonial
+
+El siguiente gráfico presenta la evolución mensual del total de activos y total de pasivos, con el fin de evaluar la estructura financiera y el crecimiento patrimonial de la institución.
+
+```{r}
+grafico_estructura_patrimonial
+```
+
+# Conclusión general
+
+`r texto_conclusion_general`
+
+# Principales fortalezas
+
+```{r, results='asis'}
+cat(texto_fortalezas)
+```
+
+# Principales riesgos
+
+```{r, results='asis'}
+cat(texto_riesgos)
+```
+
+# Recomendaciones gerenciales
+
+```{r, results='asis'}
+cat(texto_recomendaciones)
+```

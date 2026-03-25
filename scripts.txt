@@ -1,0 +1,642 @@
+-------- gerencia.R ---------------
+# COAC INFORME GERENCIA 2025
+
+# LIBRERIAS
+library(readxl)
+library(janitor)
+library(dplyr)
+library(tidyr)
+library(scales)
+library(ggplot2)
+library(gridExtra)
+library(grid)
+library(ggrepel)
+
+# Carga de analisis_financiero dentro del motor script principal
+source("R/analisis_financiero.R")
+
+# FORMATOS DE EJES
+axis_money <- scale_y_continuous(labels = comma)
+axis_percent <- scale_y_continuous(labels = percent_format(accuracy = 0.1))
+
+# TEMA INSTITUCIONAL
+tema_institucional <- theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16, hjust = 0),
+    plot.subtitle = element_text(size = 12, color = "gray40"),
+    axis.title = element_text(face = "bold"),
+    
+    axis.text.x = element_text(
+      size = 9,
+      angle = 45,
+      hjust = 1,
+      color = "gray20"
+    ),
+    
+    axis.text.y = element_text(
+      size = 10,
+      color = "gray20"
+    ),
+    
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    panel.grid.major = element_line(color = "gray85"),
+    panel.grid.minor = element_blank()
+  )
+
+# CARPETA SALIDA
+output_dir <- "/home/xut/bkpfcm/cacp/udaviz/R/studio/gerencia/output"
+
+# DATABASE
+data25 <- read_excel(
+  "/home/xut/bkpfcm/cacp/udaviz/R/studio/gerencia/data/INDICES2025.xlsx",
+  sheet = 15
+)
+
+# LIMPIAR DATABASE
+data_clean <- data25 %>% clean_names()
+
+# WIDE → TIDY
+data_tidy <- data_clean %>%
+  pivot_longer(
+    cols = -indicador,
+    names_to = "mes",
+    values_to = "valor"
+  )
+
+# LIMPIAR NOMBRES INDICADORES
+data_tidy$indicador <- make.names(data_tidy$indicador)
+
+# ORDENAR MESES
+data_tidy$mes <- factor(
+  data_tidy$mes,
+  levels = c(
+    "enero","febrero","marzo","abril","mayo","junio",
+    "julio","agosto","septiembre","octubre","noviembre","diciembre"
+  )
+)
+
+# LIMPIAR VALORES
+data_tidy <- data_tidy %>%
+  mutate(
+    valor = as.numeric(gsub("%","",valor))
+  )
+
+# FUNCION PARA DETECTAR MAXIMOS Y MINIMOS
+annotate_extremos <- function(df){
+
+  max_point <- df %>%
+    filter(valor == max(valor, na.rm = TRUE))
+
+  min_point <- df %>%
+    filter(valor == min(valor, na.rm = TRUE))
+
+  list(
+    max = max_point,
+    min = min_point
+  )
+
+}
+
+# FUNCION PARA AGREGAR ETIQUETAS A GRAFICAS
+add_extremos <- function(grafico, extremos){
+  
+  grafico +
+    geom_label_repel(
+      data = extremos$max,
+      aes(label = paste0("Max: ", round(valor,3))),
+      color = "darkgreen",
+      size = 3.5
+    ) +
+    geom_label_repel(
+      data = extremos$min,
+      aes(label = paste0("Min: ", round(valor,3))),
+      color = "red3",
+      size = 3.5
+    )
+  
+}
+
+# --------------------------------------------------
+# GRAFICO 1 CRECIMIENTO DEL NEGOCIO
+# --------------------------------------------------
+
+growth_data <- data_tidy %>%
+  filter(indicador %in% c("CARTERA.BRUTA","ACTIVOS.PRODUCTIVOS"))
+
+grafico_crecimiento <- ggplot(
+  growth_data,
+  aes(mes, valor, color = indicador, group = indicador)
+) +
+  geom_line(linewidth = 1.3) +
+  geom_point(size = 3) +
+  axis_money +
+  labs(
+    title = "Evolución de Cartera Bruta y Activos Productivos",
+    subtitle = "Crecimiento del negocio crediticio",
+    x = "Mes",
+    y = "Monto (USD)"
+  ) +
+  tema_institucional
+
+# --------------------------------------------------
+# GRAFICO 2 ESTRUCTURA FINANCIERA
+# --------------------------------------------------
+
+estructura_data <- data_tidy %>%
+  filter(indicador %in% c("ACTIVOS.PRODUCTIVOS","PASIVOS.CON.COSTO"))
+
+grafico_estructura <- ggplot(
+  estructura_data,
+  aes(mes, valor, color = indicador, group = indicador)
+) +
+  geom_line(linewidth = 1.3) +
+  geom_point(size = 3) +
+  axis_money +
+  labs(
+    title = "Estructura Financiera",
+    subtitle = "Activos productivos vs pasivos con costo",
+    x = "Mes",
+    y = "Monto (USD)"
+  ) +
+  tema_institucional
+
+# --------------------------------------------------
+# GRAFICO 3 PRODUCTIVIDAD DEL BALANCE
+# --------------------------------------------------
+
+productividad_data <- data_tidy %>%
+  filter(indicador == "RELACION.DE.PRODUCTIVIDAD")
+
+texto_productividad <- analisis_productividad(productividad_data)
+extremos_productividad <- annotate_extremos(productividad_data)
+
+grafico_productividad <- ggplot(
+  productividad_data,
+  aes(x = mes, y = valor, group = 1)
+) +
+  geom_line(color="steelblue", linewidth=1.3) +
+  geom_point(color="steelblue", size=3) +
+  axis_percent +
+  labs(
+    title="Relación de Productividad",
+    subtitle="Activos productivos respecto a pasivos con costo",
+    x="Mes",
+    y="Porcentaje"
+  ) +
+  tema_institucional
+
+#grafico_productividad <- add_extremos(grafico_productividad, extremos_productividad)
+
+# --------------------------------------------------
+# GRAFICO 4 MOROSIDAD
+# --------------------------------------------------
+
+morosidad_data <- data_tidy %>%
+  filter(indicador == "MOROSIDAD.AMPLIADA")
+
+texto_morosidad <- analisis_morosidad(morosidad_data)
+extremos_morosidad <- annotate_extremos(morosidad_data)
+
+grafico_morosidad <- ggplot(
+  morosidad_data,
+  aes(x = mes, y = valor, group = 1)
+) +
+  geom_line(color="firebrick", linewidth=1.3) +
+  geom_point(color="firebrick", size=3) +
+  geom_hline(yintercept=0.05, linetype="dashed", color="darkgreen") +
+  geom_hline(yintercept=0.08, linetype="dashed", color="orange") +
+  geom_hline(yintercept=0.10, linetype="dashed", color="red") +
+  axis_percent +
+  labs(
+    title="Morosidad Ampliada",
+    subtitle="Indicador de riesgo de cartera",
+    x="Mes",
+    y="Porcentaje"
+  ) +
+  tema_institucional
+
+grafico_morosidad <- add_extremos(grafico_morosidad, extremos_morosidad)
+
+# --------------------------------------------------
+# GRAFICO 5 CARTERA IMPRODUCTIVA
+# --------------------------------------------------
+
+improductiva_data <- data_tidy %>%
+  filter(indicador %in% c("CARTERA.IMPRODUCTIVA","CARTERA.BRUTA"))
+
+grafico_improductiva <- ggplot(
+  improductiva_data,
+  aes(mes, valor, color = indicador, group = indicador)
+) +
+  geom_line(linewidth=1.3) +
+  geom_point(size=3) +
+  axis_money +
+  labs(
+    title="Cartera Improductiva vs Cartera Bruta",
+    subtitle="Deterioro del portafolio crediticio",
+    x="Mes",
+    y="Monto (USD)"
+  ) +
+  tema_institucional
+
+# --------------------------------------------------
+# GRAFICO 6 MARGEN FINANCIERO NETO
+# --------------------------------------------------
+
+margen_data <- data_tidy %>%
+  filter(indicador == "MARGEN.FINANCIERO.NETO")
+
+grafico_margen <- ggplot(
+  margen_data,
+  aes(x = mes, y = valor, group = 1)
+) +
+  geom_line(color="darkgreen", linewidth=1.3) +
+  geom_point(color="darkgreen", size=3) +
+  axis_money +
+  labs(
+    title="Margen Financiero Neto",
+    subtitle="Evolución del margen financiero",
+    x="Mes",
+    y="Monto (USD)"
+  ) +
+  tema_institucional
+
+# --------------------------------------------------
+# GRAFICO 7 ABSORCION MARGEN FINANCIERO
+# --------------------------------------------------
+
+absorcion_data <- data_tidy %>%
+  filter(indicador == "GRADO.DE.ABSORCION.DEL.MARGEN.FINANCIERO")
+
+grafico_absorcion <- ggplot(
+  absorcion_data,
+  aes(x = mes, y = valor, group = 1)
+) +
+  geom_line(color="purple", linewidth=1.3) +
+  geom_point(color="purple", size=3) +
+  geom_hline(yintercept=0.85, linetype="dashed", color="darkgreen") +
+  geom_hline(yintercept=0.95, linetype="dashed", color="red") +
+  axis_percent +
+  labs(
+    title="Grado de Absorción del Margen",
+    subtitle="Gastos operativos respecto al margen",
+    x="Mes",
+    y="Porcentaje"
+  ) +
+  tema_institucional
+
+# --------------------------------------------------
+# GRAFICO 8 RATIO CARTERA IMPRODUCTIVA
+# --------------------------------------------------
+
+ratio_cartera <- data_tidy %>%
+  filter(indicador %in% c("CARTERA.IMPRODUCTIVA","CARTERA.BRUTA")) %>%
+  pivot_wider(names_from = indicador, values_from = valor) %>%
+  mutate(
+    ratio_improductiva = CARTERA.IMPRODUCTIVA / CARTERA.BRUTA
+  )
+
+grafico_ratio_cartera <- ggplot(
+  ratio_cartera,
+  aes(x = mes, y = ratio_improductiva, group = 1)
+) +
+  geom_line(color="#c62828", linewidth=1.3) +
+  geom_point(color="#c62828", size=3) +
+  geom_hline(yintercept=0.05, linetype="dashed", color="darkgreen") +
+  geom_hline(yintercept=0.08, linetype="dashed", color="red") +
+  axis_percent +
+  labs(
+    title="Ratio de Cartera Improductiva",
+    subtitle="Cartera Improductiva vs Cartera Bruta",
+    x="Mes",
+    y="Porcentaje"
+  ) +
+  tema_institucional
+
+# --------------------------------------------------
+# GRAFICO 9 EFICIENCIA OPERATIVA
+# --------------------------------------------------
+
+eficiencia_data <- data_tidy %>%
+  filter(indicador %in% c("GASTOS.DE.OPERACION","MARGEN.FINANCIERO.NETO")) %>%
+  pivot_wider(names_from = indicador, values_from = valor) %>%
+  mutate(
+    eficiencia = GASTOS.DE.OPERACION / MARGEN.FINANCIERO.NETO
+  )
+
+texto_eficiencia <- analisis_eficiencia(eficiencia_data)
+
+grafico_eficiencia <- ggplot(
+  eficiencia_data,
+  aes(x = mes, y = eficiencia, group = 1)
+) +
+  geom_line(color="#6a1b9a", linewidth=1.3) +
+  geom_point(color="#6a1b9a", size=3) +
+  geom_hline(yintercept=0.70, linetype="dashed", color="darkgreen") +
+  geom_hline(yintercept=0.85, linetype="dashed", color="orange") +
+  geom_hline(yintercept=1.00, linetype="dashed", color="red") +
+  axis_percent +
+  labs(
+    title="Eficiencia Operativa",
+    subtitle="Gastos de operacion vs margen financiero neto",
+    x="Mes",
+    y="Porcentaje"
+  ) +
+  tema_institucional
+
+# EXPORTAR TODAS LAS GRAFICAS
+graficos <- list(
+  crecimiento = grafico_crecimiento,
+  estructura = grafico_estructura,
+  productividad = grafico_productividad,
+  morosidad = grafico_morosidad,
+  improductiva = grafico_improductiva,
+  margen = grafico_margen,
+  absorcion = grafico_absorcion,
+  ratio = grafico_ratio_cartera,
+  eficiencia = grafico_eficiencia
+)
+
+for(nombre in names(graficos)){
+  
+  ggsave(
+    paste0(output_dir,"/",nombre,".png"),
+    graficos[[nombre]],
+    width = 10,
+    height = 6,
+    dpi = 300
+  )
+  
+  ggsave(
+    paste0(output_dir,"/",nombre,".pdf"),
+    graficos[[nombre]],
+    width = 10,
+    height = 6
+  )
+  
+}
+
+# DASHBOARD DE TODAS LAS GRAFICAS
+dashboard <- grid.arrange(
+  grafico_crecimiento,
+  grafico_estructura,
+  grafico_productividad,
+  grafico_morosidad,
+  grafico_improductiva,
+  grafico_margen,
+  grafico_absorcion,
+  grafico_ratio_cartera,
+  grafico_eficiencia,
+  ncol = 3,
+  top = textGrob(
+    "COOPERATIVA DE AHORRO Y CRÉDITO\nIndicadores Financieros 2025",
+    gp = gpar(fontsize = 18, fontface = "bold")
+  )
+)
+
+ggsave(
+  paste0(output_dir,"/dashboard_financiero_2025.png"),
+  dashboard,
+  width = 14,
+  height = 12,
+  dpi = 300
+)
+
+ggsave(
+  paste0(output_dir,"/dashboard_financiero_2025.pdf"),
+  dashboard,
+  width = 14,
+  height = 12
+)
+
+
+-------- funciones.R ---------------
+library(dplyr)
+library(ggrepel)
+library(scales)
+
+annotate_extremos <- function(df){
+  
+  max_point <- df %>%
+    filter(valor == max(valor, na.rm = TRUE))
+  
+  min_point <- df %>%
+    filter(valor == min(valor, na.rm = TRUE))
+  
+  list(
+    max = max_point,
+    min = min_point
+  )
+}
+
+add_extremos <- function(grafico, extremos, tipo="numero"){
+  
+  if(tipo=="porcentaje"){
+    lab_max <- paste0("Max: ", percent(extremos$max$valor))
+    lab_min <- paste0("Min: ", percent(extremos$min$valor))
+  } else {
+    lab_max <- paste0("Max: ", comma(extremos$max$valor))
+    lab_min <- paste0("Min: ", comma(extremos$min$valor))
+  }
+  
+  grafico +
+    geom_label_repel(
+      data = extremos$max,
+      aes(label = lab_max),
+      color = "darkgreen",
+      size = 3.5
+    ) +
+    geom_label_repel(
+      data = extremos$min,
+      aes(label = lab_min),
+      color = "red3",
+      size = 3.5
+    )
+}
+
+
+-------- analisis_financiero.R ---------------
+# Funciones de analisis financiero
+
+library(dplyr)
+library(scales)
+
+# Analisis Morosidad
+analisis_morosidad <- function(df){
+  
+  ultimo <- tail(df,1)$valor
+  maximo <- max(df$valor, na.rm=TRUE)
+  mes_max <- df$mes[df$valor == maximo]
+  
+  estado <- case_when(
+    ultimo < 0.05 ~ "nivel saludable",
+    ultimo < 0.08 ~ "nivel moderado de riesgo",
+    ultimo < 0.10 ~ "nivel de vigilancia",
+    TRUE ~ "nivel crítico"
+  )
+  
+  texto <- paste0(
+    "La morosidad ampliada registra un valor actual de ",
+    percent(ultimo),
+    ", lo cual corresponde a un ",
+    estado,
+    ". El valor máximo observado durante el periodo fue ",
+    percent(maximo),
+    " en el mes de ", mes_max,"."
+  )
+  
+  return(texto)
+}
+
+# Analisis de productividad
+analisis_productividad <- function(df){
+  
+  ultimo <- tail(df,1)$valor
+  
+  evaluacion <- case_when(
+    ultimo > 1.10 ~ "una estructura altamente eficiente",
+    ultimo > 1.00 ~ "una estructura financiera adecuada",
+    TRUE ~ "una estructura financiera débil"
+  )
+  
+  texto <- paste0(
+    "La relación de productividad se ubica en ",
+    percent(ultimo),
+    ", indicando ",
+    evaluacion,
+    " entre activos productivos y pasivos con costo."
+  )
+  
+  return(texto)
+}
+
+# Analisis Eficiencia Operativa
+analisis_eficiencia <- function(df){
+  
+  ultimo <- tail(df,1)$eficiencia
+  
+  evaluacion <- case_when(
+    ultimo < 0.60 ~ "alta eficiencia operativa",
+    ultimo < 0.80 ~ "eficiencia operativa aceptable",
+    TRUE ~ "presión significativa de gastos operativos"
+  )
+  
+  texto <- paste0(
+    "El indicador de eficiencia operativa se sitúa en ",
+    percent(ultimo),
+    ", lo que refleja ",
+    evaluacion,
+    " respecto al margen financiero generado."
+  )
+  
+  return(texto)
+}
+
+
+
+-------- informe_gerencial.Rmd ---------------
+---
+title: "Informe Gerencial Financiero 2025"
+author: "Cooperativa de Ahorro y Crédito 18 de Noviembre"
+date: "`r Sys.Date()`"
+output: pdf_document
+fontsize: 11pt
+geometry: margin=1in
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+
+setwd("..")
+
+source("R/gerencia.R")
+
+```
+
+# Resumen Ejecutivo
+
+El presente informe presenta los principales indicadores financieros de la cooperativa durante el año 2025.
+
+---
+
+# Crecimiento del negocio
+
+```{r}
+grafico_crecimiento
+```
+
+---
+
+# Estructura financiera
+
+```{r}
+grafico_estructura
+```
+
+---
+
+# Productividad
+
+`r texto_productividad`
+
+```{r}
+grafico_productividad
+```
+
+---
+
+# Morosidad ampliada
+
+`r texto_morosidad`
+
+```{r}
+grafico_morosidad
+```
+
+---
+
+# Cartera improductiva
+
+```{r}
+grafico_improductiva
+```
+
+---
+
+# Margen financiero
+
+```{r}
+grafico_margen
+```
+
+---
+
+# Grado de absorción del margen
+
+```{r}
+grafico_absorcion
+```
+
+---
+
+# Ratio cartera improductiva
+
+```{r}
+grafico_ratio_cartera
+```
+
+---
+
+# Eficiencia operativa
+
+`r texto_eficiencia`
+
+```{r}
+grafico_eficiencia
+```

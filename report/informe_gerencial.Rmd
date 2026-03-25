@@ -1,0 +1,208 @@
+---
+title: "Informe Gerencial Financiero 2025"
+author: "Cooperativa de Ahorro y Crédito 18 de Noviembre"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    latex_engine: pdflatex
+fontsize: 11pt
+geometry: margin=1in
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6,
+  fig.align = "center"
+)
+
+project_root <- normalizePath("..", winslash = "/", mustWork = TRUE)
+
+source(
+  file.path(project_root, "R", "gerencia.R"),
+  local = knitr::knit_global()
+)
+```
+
+# Resumen Ejecutivo
+
+El presente informe expone los principales resultados financieros de la cooperativa durante el ejercicio 2025, considerando crecimiento del negocio, calidad de cartera, liquidez, productividad, solvencia, rentabilidad y eficiencia operativa.
+
+```{r, results='asis'}
+cat(texto_resumen_ejecutivo)
+```
+
+---
+
+# 1. Crecimiento y Estructura Financiera
+
+## Crecimiento del negocio
+
+La evolución de la cartera bruta y de los activos productivos evidencia una expansión sostenida de la operación crediticia durante el ejercicio 2025, reflejando una adecuada gestión comercial y una mayor capacidad de colocación de recursos.
+
+```{r}
+grafico_crecimiento
+```
+
+## Estructura financiera
+
+La comparación entre activos productivos y pasivos con costo permite apreciar el uso equilibrado de los recursos captados y su adecuada canalización hacia la generación de activos rentables.
+
+```{r}
+grafico_estructura
+```
+
+## Estructura patrimonial
+
+La evolución de los activos y pasivos muestra una base institucional en crecimiento, con una relación patrimonial consistente y adecuada para respaldar el desarrollo de la cooperativa.
+
+```{r}
+grafico_estructura_patrimonial
+```
+
+---
+
+# 2. Solidez Patrimonial
+
+## Patrimonio técnico
+
+El comportamiento del patrimonio técnico evidencia un fortalecimiento progresivo de la base patrimonial de la cooperativa, elemento clave para sostener la estabilidad institucional y respaldar el crecimiento.
+
+```{r}
+grafico_patrimonio_tecnico
+```
+
+## Solvencia
+
+El indicador de solvencia se mantiene por encima de los niveles mínimos regulatorios, lo cual refleja una adecuada capacidad de respaldo patrimonial frente a los riesgos asumidos.
+
+```{r}
+grafico_solvencia
+```
+
+---
+
+# 3. Liquidez y Productividad
+
+## Liquidez institucional
+
+Los indicadores de liquidez muestran una capacidad adecuada para atender obligaciones de corto plazo, con una gestión activa de los recursos líquidos disponibles.
+
+```{r}
+grafico_liquidez
+```
+
+## Productividad del balance
+
+La relación de productividad confirma una adecuada generación de activos productivos frente a los pasivos con costo, evidenciando una estructura financiera eficiente.
+
+```{r}
+grafico_productividad
+```
+
+## Indicadores de productividad
+
+La comparación entre la relación de productividad y la utilización de pasivos con costo permite observar un uso técnico y ordenado de los recursos captados.
+
+```{r}
+grafico_productividad2
+```
+
+---
+
+# 4. Calidad de Cartera y Riesgo
+
+## Morosidad ampliada
+
+La morosidad ampliada presenta fluctuaciones durante el año; sin embargo, se mantiene dentro de niveles controlables al cierre del ejercicio, evidenciando una gestión activa del riesgo crediticio.
+
+`r texto_morosidad`
+
+```{r}
+grafico_morosidad
+```
+
+## Ratio de cartera improductiva
+
+El ratio de cartera improductiva permite dar seguimiento al deterioro relativo del portafolio y su evolución frente al crecimiento del negocio.
+
+`r texto_ratio_cartera`
+
+```{r}
+grafico_ratio_cartera
+```
+
+## Relación entre crecimiento y riesgo
+
+La siguiente gráfica permite apreciar la relación entre la expansión de la cartera y el comportamiento de la morosidad, facilitando la lectura integral del crecimiento con control del riesgo.
+
+```{r}
+grafico_riesgo_crecimiento
+```
+
+---
+
+# 5. Rentabilidad, Eficiencia y Resultado
+
+## Margen financiero neto
+
+El margen financiero neto evidencia una tendencia creciente, lo cual confirma la capacidad de la cooperativa para generar ingresos a partir de su actividad principal de intermediación.
+
+```{r}
+grafico_margen
+```
+
+## Resultado del ejercicio
+
+La evolución de ingresos, gastos y excedente evidencia una operación en crecimiento, acompañada de resultados positivos y sostenibles al cierre del periodo.
+
+```{r}
+grafico_resultado
+```
+
+## Grado de absorción del margen
+
+El grado de absorción del margen financiero muestra una estructura operativa en proceso de optimización, manteniendo cobertura adecuada del margen generado.
+
+`r texto_absorcion`
+
+```{r}
+grafico_absorcion
+```
+
+## Eficiencia operativa
+
+El seguimiento de la eficiencia operativa permite identificar oportunidades de mejora en productividad institucional, manteniendo una lectura prudente del comportamiento del gasto.
+
+`r texto_eficiencia`
+
+```{r}
+grafico_eficiencia
+```
+
+---
+
+# Conclusión General
+
+`r texto_conclusion_general`
+
+# Principales Fortalezas
+
+```{r, results='asis'}
+cat(texto_fortalezas)
+```
+
+# Principales Riesgos
+
+```{r, results='asis'}
+cat(texto_riesgos)
+```
+
+# Recomendaciones Gerenciales
+
+```{r, results='asis'}
+cat(texto_recomendaciones)
+```
